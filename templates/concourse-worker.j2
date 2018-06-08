@@ -1,0 +1,13 @@
+#!/bin/bash
+# {{ ansible_managed }}
+
+# Config
+{% for option, value in concourse_worker_options_combined.items() %}
+export {{ option }}="{{ value }}"
+{% endfor %}
+
+echo "" >> {{ concourse_log_worker }}
+echo "$(date) starting " >> {{ concourse_log_worker }}
+
+# Exec worker
+exec {{ concourse_bin_dir }}/concourse worker >> {{ concourse_log_worker }} 2>&1

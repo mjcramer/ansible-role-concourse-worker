@@ -1,0 +1,9 @@
+---
+
+- name: manage | main | Download fly
+  get_url:
+     url: "{{ concourse_manage_url }}/api/v1/cli?arch=amd64&platform={{ ansible_system | lower }}"
+     dest: "{{ concourse_bin_dir }}/fly"
+     mode: 0755
+
+- include: teams.yml

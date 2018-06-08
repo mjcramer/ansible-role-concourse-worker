@@ -1,0 +1,24 @@
+#!/bin/bash
+# {{ ansible_managed }}
+
+# Config
+{% for option, value in concourse_web_options_combined.items() %}
+export {{ option }}="{{ value }}"
+{% endfor %}
+
+echo "" >> {{ concourse_log_web }}
+echo "$(date) starting " >> {{ concourse_log_web }}
+
+## Exec web
+exec {{ concourse_bin_dir }}/concourse web >> {{ concourse_log_web }} 2>&1
+
+
+./concourse web \
+  --basic-auth-username admin \
+  --basic-auth-password sciencescape \
+  --session-signing-key session_signing_key \
+  --tsa-host-key tsa_host_key \
+  --tsa-authorized-keys authorized_worker_keys \
+  --external-url http://18.216.146.85:8080 \
+  --postgres-user postgres \
+  --postgres-password postgres

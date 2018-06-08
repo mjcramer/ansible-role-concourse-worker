@@ -1,0 +1,84 @@
+---
+# Concourse version
+concourse_version                         : "v3.5.0"
+
+## Dir structure
+concourse_base_dir                        : "/opt/concourse"
+concourse_bin_dir                         : "{{ concourse_base_dir }}/bin"
+concourse_worker_dir                      : "{{ concourse_base_dir }}/worker"
+concourse_ssh_dir                         : "{{ concourse_base_dir }}/.ssh"
+
+## Concourse log
+concourse_log_dir                         : "/var/log/concourse"
+concourse_log_worker                      : "{{ concourse_log_dir }}/concourse_worker.log"
+concourse_log_web                         : "{{ concourse_log_dir }}/concourse_web.log"
+
+## Concourse User
+concourse_user                            : "concourse"
+concourse_group                           : "concourse"
+
+
+## Amount of tries to retire running worker when process management stops daemon
+concourse_worker_retire_tries             : 10
+
+## New config dictionary based.
+## This dictionary is merged with 'concourse_web_options' dictionary, make your overrides there!
+## e.g.
+## concourse_web_options:
+##   CONCOURSE_BIND_IP                       : "10.0.0.1"
+##
+concourse_web_options                        : { }
+
+concourse_web_options_default                :
+  CONCOURSE_BIND_IP                          : "0.0.0.0"
+  CONCOURSE_TSA_HOST                         : "{{ groups[concourse_web_group][0] | default('') }}" # By default we pick the first host in web group
+  CONCOURSE_TSA_BIND_IP                      : "0.0.0.0"
+  CONCOURSE_TSA_BIND_PORT                    : "2222"
+  CONCOURSE_TSA_AUTHORIZED_KEYS              : "{{ concourse_ssh_dir }}/tsa_authorization"
+  CONCOURSE_TSA_HOST_KEY                     : "{{ concourse_ssh_dir }}/tsa"
+  CONCOURSE_SESSION_SIGNING_KEY              : "{{ concourse_ssh_dir }}/session_signing"
+
+## This dictionary is merged with 'concourse_worker_options' dictionary, make your overrides there!
+## e.g.
+## concourse_worker_options:
+##   CONCOURSE_NAME                          : "my-worker"
+##
+concourse_worker_options                     : { }
+
+concourse_worker_options_default             :
+  CONCOURSE_WORK_DIR                         : "{{ concourse_worker_dir }}"
+  CONCOURSE_TSA_WORKER_PRIVATE_KEY           : "{{ concourse_ssh_dir }}/worker"
+  CONCOURSE_SESSION_SIGNING_KEY              : "{{ concourse_ssh_dir }}/session_signing"
+  CONCOURSE_TSA_HOST_KEY                     : "{{ concourse_ssh_dir }}/tsa"
+  CONCOURSE_TSA_HOST                         : "{{ concourse_web_options['CONCOURSE_TSA_HOST'] | default(concourse_web_options_default['CONCOURSE_TSA_HOST']) }}"
+  CONCOURSE_TSA_PORT                         : "{{ concourse_web_options['CONCOURSE_TSA_BIND_PORT'] | default(concourse_web_options_default['CONCOURSE_TSA_BIND_PORT']) }}"
+  CONCOURSE_TSA_PUBLIC_KEY                   : "{{ concourse_web_options['CONCOURSE_TSA_HOST_KEY'] | default(concourse_web_options_default['CONCOURSE_TSA_HOST_KEY']) }}.pub"
+
+
+## Ansible Groups to form clusters
+concourse_web_group                       : "concourse-web"
+concourse_worker_group                    : "concourse-worker"
+
+## Management
+concourse_manage_url                      : "{{ concourse_web_options_combined['CONCOURSE_EXTERNAL_URL'] | default('http://127.0.0.1:8080') }}"
+## Write some comments
+concourse_manage_credential_user          : "{{ concourse_web_options_combined['CONCOURSE_BASIC_AUTH_USERNAME'] }}"
+concourse_manage_credential_password      : "{{ concourse_web_options_combined['CONCOURSE_BASIC_AUTH_PASSWORD'] }}"
+
+### Management Teams
+concourse_manage_teams                    : False
+concourse_teams                           : []
+
+### Management Pipelines ( still not working )
+concourse_manage_pipelines                : False
+
+## Reboot when updating kernel (we disable this for test :( on docker)
+concourse_reboot                          : True
+
+## SSH
+concourse_worker_position                 : "{{ groups[concourse_worker_group].index(inventory_hostname)| default(0) }}"
+concourse_key_worker_public               : "{{ concourse_worker_keys[concourse_worker_position | int ].public}}"
+concourse_key_worker_private              : "{{ concourse_worker_keys[concourse_worker_position | int ].private}}"
+
+# temp solution to systemV issue and ansible :(
+concourse_ignore_errors                       : "{{ ansible_lsb['codename'] == 'xenial' | default(False)}}"

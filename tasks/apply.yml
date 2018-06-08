@@ -1,0 +1,61 @@
+# roles/cassandra/tasks/apply.yml
+---
+- name: apply | add group
+  group:
+    name: "{{ cassandra_group }}"
+    system: true
+    state: present
+
+- name: apply | add user
+  user: 
+    name: "{{ cassandra_user}}"
+    group: "{{ cassandra_group }}"
+    system: true
+    createhome: no
+    home: "{{ cassandra.home_dir }}"
+    state: present
+
+- name: apply | create folders
+  file: 
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ cassandra_user }}" 
+    group: "{{ cassandra_group }}"
+  with_items:
+    - "{{ cassandra.conf_dir }}"
+    - "{{ cassandra.log_dir }}"
+    - "{{ cassandra.lib_dir }}"
+
+- name: apply | download archive
+  get_url:
+    url: "{{ cassandra.remote_archive }}" 
+    dest: "{{ cassandra.local_archive }}"
+    checksum: "{{ cassandra_download_checksum }}"
+    mode: 0644 
+    force: no
+  when: cassandra.remote_archive | match("^http.*$")
+  tags:
+    - download
+
+- name: apply | copy from local
+  copy:
+    src: "{{ cassandra.remote_archive }}"
+    dest: "{{ cassandra.local_archive }}"
+  when: cassandra.remote_archive | match("^(?!http).*$")
+
+- name: apply | unpack archive
+  unarchive: 
+    src: "{{ cassandra.local_archive }}"
+    dest: "{{ base_home_dir }}"
+    owner: "{{ cassandra_user }}"
+    group: "{{ cassandra_group}}"
+    copy: no
+    creates: "{{ base_home_dir }}/{{ cassandra_name }}"
+
+- name: apply | create symlink
+  file:
+    src: "{{ base_home_dir }}/{{ cassandra_name }}"
+    dest: "{{ cassandra.home_dir }}"
+    owner: "{{ cassandra_user }}"
+    group: "{{ cassandra_group}}"
+    state: link
