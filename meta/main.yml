@@ -2,6 +2,7 @@
 ---
 dependencies:
   - role: mjcramer.concourse-common
+  - role: mjcramer.docker
 
 galaxy_info:
   author: Michael Cramer
